@@ -1,8 +1,16 @@
 import React from "react";
-import { FormGrid } from "@formio/react";
+
 import { Card, Container } from "react-bootstrap";
 import { CopyBlock, atomOneLight } from "react-code-blocks";
-import { Form, FormProps } from "@formio/react";
+import { Form, FormProps, FormGrid, Formio } from "@formio/react";
+import { order, invoice, freeform } from "__mocks__/payables-schema";
+import { capitalize } from "lodash";
+
+// form.io recognized components
+//https://github.com/formio/formio.js/wiki/Components-JSON-Schema#common-parameters
+
+// creating custom components
+// https://help.form.io/developers/form-development/custom-components
 
 export const ExampleForm = ({ textContent, ...formProps }: { textContent: string } & FormProps) => {
   return (
@@ -16,15 +24,66 @@ export const ExampleForm = ({ textContent, ...formProps }: { textContent: string
         codeBlock={true}
       />
       <div className="spacer" />
-      <h5>Result</h5>
-      <div className="bg-light rounded-3 p-5 mb-4">
-        <Form {...formProps} />
-      </div>
+
+      <Container className="pt-5">
+        <h5>Result</h5>
+        <div className="bg-light rounded-3 p-5 mb-4">
+          <Form {...formProps} />
+        </div>
+      </Container>
     </Card>
   );
 };
 
 export const FormRenderer = () => {
+  const [showComponent, setShowComponent] = React.useState("FormWithPayablesSchema");
+
+  const generateFormIOComponents = (schema: any) => {
+    return {
+      components: [
+        ...schema.formFields.map((field: any) => {
+          return {
+            type: field.type,
+            label: field.labels["en-US"],
+            key: field.name,
+            input: true,
+          };
+        }),
+        {
+          type: "button",
+          action: "Submit",
+          label: "Submit",
+          theme: "primary",
+        },
+      ],
+    };
+  };
+  const formDefinitions = {
+    order: generateFormIOComponents(order),
+    invoice: generateFormIOComponents(invoice),
+    freeform: generateFormIOComponents(freeform),
+  };
+
+  return (
+    <>
+      <h2>FormRenderer</h2>
+      <button onClick={() => setShowComponent("ProvidedReactExample")}>
+        Show ProvidedReactExample
+      </button>
+      <button onClick={() => setShowComponent("FormWithPayablesSchema")}>
+        Show FormWithPayablesSchema
+      </button>
+      <button onClick={() => setShowComponent("FormWithForge")}>Show FormWithForge</button>
+      {showComponent === "ProvidedReactExample" && <ProvidedReactExample />}
+      {showComponent === "FormWithPayablesSchema" && (
+        <FormWithPayablesSchema forms={formDefinitions} />
+      )}
+      {showComponent === "FormWithForge" && <FormWithForge />}
+    </>
+  );
+};
+
+export const ProvidedReactExample = () => {
   const formDefinition = {
     components: [
       {
@@ -53,67 +112,38 @@ export const FormRenderer = () => {
       },
     ],
   };
-  const submissionData = {
-    data: {
-      firstName: "Joe",
-      lastName: "Smith",
-      email: "joe@example.com",
-    },
-  };
 
   return (
+    <Container className="pt-5">
+      <p>Pass a JSON form definition directly to the component...</p>
+      <ExampleForm
+        textContent={`<Form form={${JSON.stringify(formDefinition, null, 2)}} />`}
+        src={formDefinition}
+        onChange={() => console.log("The form changed!")}
+        onSubmit={() => console.log("The form was submitted!")}
+      />
+    </Container>
+  );
+};
+
+export const FormWithPayablesSchema = (forms: { [key: string]: any }) => {
+  return (
     <>
-      <h2>FormRenderer</h2>
-
-      <Container className="pt-5">
-        <div className="bg-light rounded-3 p-5 mb-4">
-          <h2>
-            JavaScript Powered Forms for React by
-            <a
-              href="https://form.io"
-              target="_blank"
-              rel="noreferrer"
-              style={{ padding: "0 0.4rem" }}
-            >
-              {/* <img alt="Form.io logo" src={logo} style={{ height: "3rem", display: "inline" }} /> */}
-            </a>
-          </h2>
-          <p>
-            This library provides JavaScript powered forms for{" "}
-            <a target="_blank" href="https://reactjs.org" rel="noreferrer">
-              React
-            </a>
-            . This allows you to render the JSON schema forms produced by Form.io and render those
-            within your application using React, as well as provides an interface SDK to communicate
-            to the Form.io API's. The benefits of this library include.
-          </p>
-          <ul>
-            <li>Renders a JSON schema as a webform and hooks up that form to the Form.io APIs</li>
-            <li>
-              Nested components, layouts, Date/Time, Select, Input Masks, and many more included
-              features
-            </li>
-            <li>Full JavaScript API SDK library on top of Form.io</li>
-          </ul>
-        </div>
-
-        <p>Pass a JSON form definition directly to the component...</p>
-        <ExampleForm
-          textContent={`<Form form={${JSON.stringify(formDefinition, null, 2)}} />`}
-          src={formDefinition}
-        />
-        {/* <p>Editing forms: populate the form at runtime with submission data.</p>
-
-        <ExampleForm
-          textContent={`<Form form={${JSON.stringify(
-            formDefinition,
-            null,
-            2,
-          )}} submission={${JSON.stringify(submissionData, null, 2)}} />`}
-          src={formDefinition}
-          submission={submissionData}
-        /> */}
-      </Container>
+      {Object.entries(forms.forms).map(([formType, formDefinition]) => (
+        <Container key={formType} className="pt-5 mb-2">
+          <h3>{capitalize(formType)}</h3>
+          <ExampleForm
+            textContent={`<Form form={${JSON.stringify(formDefinition, null, 2)}} />`}
+            src={formDefinition}
+            onChange={() => console.log("The form changed!")}
+            onSubmit={() => alert("The form was submitted!")}
+          />
+        </Container>
+      ))}
     </>
   );
+};
+
+export const FormWithForge = () => {
+  return <></>;
 };

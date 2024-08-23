@@ -16,6 +16,7 @@ export type FormFieldType =
   | "MonetaryAmount"
   | "UsdAmount"
   | "CadAmount";
+
 export interface FormField {
   name: string;
   labels: {
